@@ -59,6 +59,17 @@
 
       <!-- Right form -->
       <div class="contact-form-wrap reveal">
+
+        <!-- Status messages -->
+        <div v-if="status === 'success'" class="form-alert success">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          Message sent! I'll get back to you soon.
+        </div>
+        <div v-if="status === 'error'" class="form-alert error">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Something went wrong. Please try again.
+        </div>
+
         <form class="contact-form" @submit.prevent="handleSubmit">
           <div class="form-row">
             <div class="form-group">
@@ -90,12 +101,19 @@
             <label>Message</label>
             <textarea v-model="form.message" placeholder="Tell me about your project..." rows="5" required></textarea>
           </div>
-          <button type="submit" class="btn btn-primary submit-btn" :disabled="submitted">
-            <span v-if="!submitted">
+          <button type="submit" class="btn btn-primary submit-btn" :disabled="loading">
+            <span v-if="loading" class="btn-inner">
+              <span class="spinner"></span>
+              Sending...
+            </span>
+            <span v-else-if="status === 'success'" class="btn-inner">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Message Sent!
+            </span>
+            <span v-else class="btn-inner">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               Send Message
             </span>
-            <span v-else>✓ Message Sent!</span>
           </button>
         </form>
       </div>
@@ -105,19 +123,67 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import emailjs from '@emailjs/browser'
 
-const email = 'mudassirmazhar07@gmail.com'
-const submitted = ref(false)
+// ─── EmailJS Config ─────────────────────────────────────────
+// Replace these with your actual IDs from emailjs.com dashboard
+const EMAILJS_SERVICE_ID  = 'service_2tfzbbx'
+const EMAILJS_TEMPLATE_ID = 'template_pvgag3u'
+const EMAILJS_PUBLIC_KEY  = 'hz_yvvg7MaEbQnNQ2'
+// ────────────────────────────────────────────────────────────
+
+const email    = 'mudassirmazhar07@gmail.com'
+const loading  = ref(false)
+const status   = ref('') // 'success' | 'error' | ''
 const services = ['Web Development', 'Automation', 'AI Integration', 'SEO', 'Consultation']
 
 const form = ref({ name: '', email: '', subject: '', service: '', message: '' })
 
-const handleSubmit = () => {
-  const { name, subject, message, service } = form.value
-  const body = `Name: ${name}\nService: ${service}\n\n${message}`
-  window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject || 'Portfolio Inquiry')}&body=${encodeURIComponent(body)}`
-  submitted.value = true
-  setTimeout(() => submitted.value = false, 3000)
+const handleSubmit = async () => {
+  loading.value = true
+  status.value  = ''
+
+  const now = new Date()
+  const time = now.toLocaleString('en-PK', {
+    weekday: 'short', year: 'numeric', month: 'short',
+    day: 'numeric', hour: '2-digit', minute: '2-digit'
+  })
+
+  // initials from name e.g. "Mudassir Mazhar" → "MM"
+  const initials = form.value.name
+    .split(' ')
+    .map(w => w[0]?.toUpperCase() || '')
+    .slice(0, 2)
+    .join('')
+
+  const templateParams = {
+    name:     form.value.name,
+    email:    form.value.email,
+    subject:  form.value.subject || 'Portfolio Inquiry',
+    service:  form.value.service || 'Not specified',
+    message:  form.value.message,
+    time,
+    initials,
+    phone:    '0323-2013814',
+  }
+
+  try {
+    await emailjs.send(
+      EMAILJS_SERVICE_ID,
+      EMAILJS_TEMPLATE_ID,
+      templateParams,
+      EMAILJS_PUBLIC_KEY
+    )
+    status.value = 'success'
+    form.value   = { name: '', email: '', subject: '', service: '', message: '' }
+    setTimeout(() => status.value = '', 5000)
+  } catch (err) {
+    console.error('EmailJS error:', err)
+    status.value = 'error'
+    setTimeout(() => status.value = '', 5000)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
@@ -146,9 +212,7 @@ onMounted(() => {
 
 .contact-methods { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
 .contact-method {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  display: flex; align-items: center; gap: 14px;
   padding: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -163,25 +227,37 @@ onMounted(() => {
   border: 1px solid var(--border);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  color: var(--accent);
-  flex-shrink: 0;
+  color: var(--accent); flex-shrink: 0;
 }
 .cm-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); display: block; }
 .cm-val { font-size: 0.85rem; color: var(--text-primary); }
 
 .availability {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
   background: rgba(34, 197, 94, 0.08);
   border: 1px solid rgba(34, 197, 94, 0.2);
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-size: 0.8rem;
-  color: #22c55e;
+  padding: 8px 16px; border-radius: 100px;
+  font-size: 0.8rem; color: #22c55e;
   font-family: var(--font-mono);
 }
 .avail-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 6px #22c55e; }
+
+/* Alerts */
+.form-alert {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; border-radius: 8px;
+  font-size: 0.85rem; margin-bottom: 16px;
+}
+.form-alert.success {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #22c55e;
+}
+.form-alert.error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
 
 /* Form */
 .contact-form-wrap {
@@ -197,14 +273,10 @@ label { font-size: 0.78rem; color: var(--text-secondary); font-family: var(--fon
 input, textarea {
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
-  border-radius: 8px;
-  padding: 12px 14px;
+  border-radius: 8px; padding: 12px 14px;
   color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: 0.88rem;
-  transition: var(--transition);
-  outline: none;
-  resize: none;
+  font-family: var(--font-display); font-size: 0.88rem;
+  transition: var(--transition); outline: none; resize: none;
 }
 input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
@@ -214,21 +286,30 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
-  padding: 7px 14px;
-  border-radius: 100px;
-  font-size: 0.78rem;
-  font-family: var(--font-mono);
-  cursor: pointer;
-  transition: var(--transition);
+  padding: 7px 14px; border-radius: 100px;
+  font-size: 0.78rem; font-family: var(--font-mono);
+  cursor: pointer; transition: var(--transition);
 }
 .s-pill:hover, .s-pill.active {
   background: var(--accent-subtle);
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent); color: var(--accent);
 }
 
 .submit-btn { width: 100%; justify-content: center; padding: 14px; }
-.submit-btn:disabled { opacity: 0.7; cursor: default; }
+.submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* Spinner */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 900px) {
   .contact-layout { grid-template-columns: 1fr; }
