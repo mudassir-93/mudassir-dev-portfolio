@@ -74,16 +74,22 @@
           <div class="form-row">
             <div class="form-group">
               <label>Your Name</label>
-              <input v-model="form.name" type="text" placeholder="John Doe" required />
+              <input v-model="form.name" type="text" placeholder="e.g. Ahmed Khan" required />
             </div>
             <div class="form-group">
               <label>Email Address</label>
-              <input v-model="form.email" type="email" placeholder="john@example.com" required />
+              <input v-model="form.email" type="email" placeholder="e.g. ahmed@gmail.com" required />
             </div>
           </div>
-          <div class="form-group">
-            <label>Subject</label>
-            <input v-model="form.subject" type="text" placeholder="Project Inquiry, Collaboration..." />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input v-model="form.phone" type="tel" placeholder="e.g. 0312-3456789" />
+            </div>
+            <div class="form-group">
+              <label>Subject</label>
+              <input v-model="form.subject" type="text" placeholder="e.g. Website for my business" />
+            </div>
           </div>
           <div class="form-group">
             <label>What do you need?</label>
@@ -99,7 +105,7 @@
           </div>
           <div class="form-group">
             <label>Message</label>
-            <textarea v-model="form.message" placeholder="Tell me about your project..." rows="5" required></textarea>
+            <textarea v-model="form.message" placeholder="e.g. I need a portfolio website with 5 pages, modern design, and a contact form. Budget is flexible." rows="5" required></textarea>
           </div>
           <button type="submit" class="btn btn-primary submit-btn" :disabled="loading">
             <span v-if="loading" class="btn-inner">
@@ -125,8 +131,7 @@
 import { ref, onMounted } from 'vue'
 import emailjs from '@emailjs/browser'
 
-// ─── EmailJS Config ─────────────────────────────────────────
-// Replace these with your actual IDs from emailjs.com dashboard
+// ─── EmailJS Config ──────────────────────────────────────────
 const EMAILJS_SERVICE_ID  = 'service_2tfzbbx'
 const EMAILJS_TEMPLATE_ID = 'template_pvgag3u'
 const EMAILJS_PUBLIC_KEY  = 'hz_yvvg7MaEbQnNQ2'
@@ -134,10 +139,10 @@ const EMAILJS_PUBLIC_KEY  = 'hz_yvvg7MaEbQnNQ2'
 
 const email    = 'mudassirmazhar07@gmail.com'
 const loading  = ref(false)
-const status   = ref('') // 'success' | 'error' | ''
+const status   = ref('')
 const services = ['Web Development', 'Automation', 'AI Integration', 'SEO', 'Consultation']
 
-const form = ref({ name: '', email: '', subject: '', service: '', message: '' })
+const form = ref({ name: '', email: '', phone: '', subject: '', service: '', message: '' })
 
 const handleSubmit = async () => {
   loading.value = true
@@ -149,7 +154,6 @@ const handleSubmit = async () => {
     day: 'numeric', hour: '2-digit', minute: '2-digit'
   })
 
-  // initials from name e.g. "Mudassir Mazhar" → "MM"
   const initials = form.value.name
     .split(' ')
     .map(w => w[0]?.toUpperCase() || '')
@@ -159,12 +163,12 @@ const handleSubmit = async () => {
   const templateParams = {
     name:     form.value.name,
     email:    form.value.email,
+    phone:    form.value.phone || 'Not provided',
     subject:  form.value.subject || 'Portfolio Inquiry',
     service:  form.value.service || 'Not specified',
     message:  form.value.message,
     time,
     initials,
-    phone:    '0323-2013814',
   }
 
   try {
@@ -175,7 +179,7 @@ const handleSubmit = async () => {
       EMAILJS_PUBLIC_KEY
     )
     status.value = 'success'
-    form.value   = { name: '', email: '', subject: '', service: '', message: '' }
+    form.value   = { name: '', email: '', phone: '', subject: '', service: '', message: '' }
     setTimeout(() => status.value = '', 5000)
   } catch (err) {
     console.error('EmailJS error:', err)
@@ -206,7 +210,6 @@ onMounted(() => {
   align-items: start;
 }
 
-/* Info */
 .contact-info h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 14px; }
 .contact-info > p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; margin-bottom: 32px; }
 
@@ -242,7 +245,6 @@ onMounted(() => {
 }
 .avail-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 6px #22c55e; }
 
-/* Alerts */
 .form-alert {
   display: flex; align-items: center; gap: 8px;
   padding: 12px 16px; border-radius: 8px;
@@ -259,7 +261,6 @@ onMounted(() => {
   color: #ef4444;
 }
 
-/* Form */
 .contact-form-wrap {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -297,10 +298,8 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 
 .submit-btn { width: 100%; justify-content: center; padding: 14px; }
 .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
 .btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
 
-/* Spinner */
 .spinner {
   width: 14px; height: 14px;
   border: 2px solid currentColor;
