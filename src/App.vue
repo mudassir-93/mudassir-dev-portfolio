@@ -16,11 +16,15 @@
 
     <!-- Footer -->
     <FooterBar />
+    
+    <!-- Vercel Analytics -->
+    <Analytics />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { Analytics } from '@vercel/analytics/vue'
 import NavBar from './components/NavBar.vue'
 import FooterBar from './components/FooterBar.vue'
 
