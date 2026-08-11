@@ -16,11 +16,15 @@
 
     <!-- Footer -->
     <FooterBar />
+
+    <!-- Vercel Speed Insights -->
+    <SpeedInsights />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { SpeedInsights } from '@vercel/speed-insights/vue'
 import NavBar from './components/NavBar.vue'
 import FooterBar from './components/FooterBar.vue'
 
